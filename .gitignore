@@ -1,0 +1,35 @@
+# Local environment and secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local data directories for emulators
+.azurite/
+.postgres-data/
+
+# Node
+node_modules/
+**/node_modules/
+frontend/dist/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+**/.venv/
+
+# Generated local files
+uploads/
+outputs/
+backend/uploads/
+backend/outputs/
+**/__pycache__/
+*.log
+
+# Editor / OS
+.vscode/*.json
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.DS_Store

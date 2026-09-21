@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FinSight API (debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${command:python.interpreterPath}",
+      "program": "${workspaceFolder}/backend/app.py",
+      "cwd": "${workspaceFolder}/backend",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/backend",
+        "HOST": "0.0.0.0",
+        "PORT": "8001",
+        "LLM_PROVIDER": "lmstudio",
+        "LMSTUDIO_BASE_URL": "http://localhost:1234/v1",
+        "LMSTUDIO_API_KEY": "lm-studio",
+        "LMSTUDIO_MODEL": "qwen3-8b"
+      },
+      "preLaunchTask": "FinSight API: uvicorn start"
+    },
+    {
+      "name": "FinSight Frontend (debug)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/frontend",
+      "preLaunchTask": "FinSight Frontend: npm run dev"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug All Services",
+      "configurations": ["FinSight API (debug)", "FinSight Frontend (debug)"],
+      "preLaunchTask": "Start Services in Sequence",
+      "stopAll": true
+    }
+  ]
+}

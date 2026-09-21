@@ -1,0 +1,111 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Emulators",
+      "type": "shell",
+      "command": "docker compose up -d postgres azurite",
+      "problemMatcher": [],
+      "runOptions": {
+        "instanceLimit": 1,
+        "instancePolicy": "silent"
+      }
+    },
+    {
+      "label": "FinSight API: pip install",
+      "type": "shell",
+      "command": "python -m pip install -r requirements.txt",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "problemMatcher": [],
+      "runOptions": {
+        "instanceLimit": 1,
+        "instancePolicy": "silent"
+      }
+    },
+    {
+      "label": "FinSight API: uvicorn start",
+      "type": "shell",
+      "command": "python -m uvicorn app:app --host 0.0.0.0 --port 8001",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "dependsOn": ["Start Emulators", "FinSight API: pip install"],
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "python",
+        "severity": "info",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": ".*Uvicorn running on.*"
+        }
+      },
+      "runOptions": {
+        "instanceLimit": 1,
+        "instancePolicy": "silent"
+      }
+    },
+    {
+      "label": "FinSight Frontend: npm install",
+      "type": "shell",
+      "command": "npm install",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "problemMatcher": [],
+      "runOptions": {
+        "instanceLimit": 1,
+        "instancePolicy": "silent"
+      }
+    },
+    {
+      "label": "FinSight Frontend: npm run dev",
+      "type": "shell",
+      "command": "npm run dev -- --host 0.0.0.0 --port 5173",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "dependsOn": ["FinSight Frontend: npm install"],
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "severity": "info",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": ".*Local:.*http://localhost:5173/.*"
+        }
+      },
+      "runOptions": {
+        "instanceLimit": 1,
+        "instancePolicy": "silent"
+      }
+    },
+    {
+      "label": "Start Services in Sequence",
+      "dependsOn": [
+        "FinSight API: uvicorn start",
+        "FinSight Frontend: npm run dev"
+      ],
+      "dependsOrder": "sequence",
+      "runOptions": {
+        "instanceLimit": 1,
+        "instancePolicy": "silent"
+      }
+    }
+  ]
+}

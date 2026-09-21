@@ -1,0 +1,109 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: finsight-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-finsight}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finsight}
+      POSTGRES_DB: ${POSTGRES_DB:-finsight}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-finsight} -d ${POSTGRES_DB:-finsight}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: finsight-azurite
+    restart: unless-stopped
+    command: azurite --blobHost 0.0.0.0 --blobPort 10000 --queueHost 0.0.0.0 --queuePort 10001 --tableHost 0.0.0.0 --tablePort 10002 --location /data --debug /data/debug.log
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    volumes:
+      - ./.azurite:/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "const net = require(''net''); const socket = net.createConnection(10000, ''127.0.0.1''); socket.on(''connect'', () => { socket.end(); process.exit(0); }); socket.on(''error'', () => process.exit(1));" || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: finsight-backend
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://finsight:finsight@postgres:5432/finsight
+      - STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true
+      - AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true
+      - AZURITE_ACCOUNT_NAME=devstoreaccount1
+      - AZURITE_ACCOUNT_KEY=Eby8vdM...nQ==
+      - HOST=0.0.0.0
+      - PORT=8001
+      - LMSTUDIO_BASE_URL=http://host.docker.internal:1234/v1
+      - LMSTUDIO_API_KEY=lm-studio
+      - LMSTUDIO_MODEL=qwen3-8b
+      - LLM_PROVIDER=lmstudio
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - PINECONE_API_KEY=${PINECONE_API_KEY:-}
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backend:/app
+      - ./backend/uploads:/app/uploads
+      - ./backend/outputs:/app/outputs
+      - ./backend/models:/app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      azurite:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: finsight-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  postgres-data:
+  azurite-data:
