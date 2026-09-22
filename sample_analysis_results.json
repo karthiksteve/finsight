@@ -1,0 +1,343 @@
+{
+  "success": true,
+  "file_info": {
+    "original_filename": "test_document.txt",
+    "file_size": 516,
+    "file_type": "text",
+    "extraction_method": "direct_read"
+  },
+  "text_extraction": {
+    "success": true,
+    "text_length": 504,
+    "html_available": false,
+    "metadata": {
+      "file_type": "text",
+      "file_extension": ".txt",
+      "file_size": 516,
+      "extraction_method": "direct_read"
+    }
+  },
+  "pipeline_steps": [
+    "ner",
+    "langextract",
+    "finbert",
+    "rag_indexing"
+  ],
+  "ner": {
+    "success": true,
+    "entities": [
+      {
+        "text": "Financial Insight Test Document\n\nApple Inc.",
+        "label": "ORG",
+        "start": 0,
+        "end": 43,
+        "confidence": null
+      },
+      {
+        "text": "a",
+        "label": "DURATION",
+        "start": 53,
+        "end": 54,
+        "confidence": null
+      },
+      {
+        "text": "of",
+        "label": "PERCENT",
+        "start": 63,
+        "end": 65,
+        "confidence": null
+      },
+      {
+        "text": "$89.5 billion",
+        "label": "MONEY",
+        "start": 66,
+        "end": 79,
+        "confidence": null
+      },
+      {
+        "text": "the quarter",
+        "label": "DATE",
+        "start": 84,
+        "end": 95,
+        "confidence": null
+      },
+      {
+        "text": "Tim Cook",
+        "label": "PERSON",
+        "start": 116,
+        "end": 124,
+        "confidence": null
+      },
+      {
+        "text": "on",
+        "label": "DURATION",
+        "start": 148,
+        "end": 150,
+        "confidence": null
+      },
+      {
+        "text": "Tuesday",
+        "label": "DATE",
+        "start": 151,
+        "end": 158,
+        "confidence": null
+      },
+      {
+        "text": "150.25",
+        "label": "MONEY",
+        "start": 185,
+        "end": 191,
+        "confidence": null
+      },
+      {
+        "text": "be",
+        "label": "DURATION",
+        "start": 218,
+        "end": 220,
+        "confidence": null
+      },
+      {
+        "text": "within 30 days",
+        "label": "PAYMENT_TERM",
+        "start": 226,
+        "end": 240,
+        "confidence": null
+      },
+      {
+        "text": "of",
+        "label": "PERCENT",
+        "start": 241,
+        "end": 243,
+        "confidence": null
+      },
+      {
+        "text": "90 days",
+        "label": "DATE",
+        "start": 305,
+        "end": 312,
+        "confidence": null
+      },
+      {
+        "text": "a",
+        "label": "DURATION",
+        "start": 489,
+        "end": 490,
+        "confidence": null
+      }
+    ],
+    "entity_count": 14,
+    "visualization_file": "ner_entities_5149479e6c614cb89e02946c5a795494.html",
+    "visualization_url": "/outputs/ner_entities_5149479e6c614cb89e02946c5a795494.html",
+    "metadata": {
+      "text_length": 504,
+      "model_path": "C:\\Users\\speak\\Downloads\\nlp2.0\\backend\\models\\ner_model\\model-best",
+      "entity_types": [
+        "PAYMENT_TERM",
+        "MONEY",
+        "DATE",
+        "PERCENT",
+        "ORG",
+        "DURATION",
+        "PERSON"
+      ]
+    }
+  },
+  "langextract": {
+    "success": true,
+    "results": {
+      "local_rule_engine": {
+        "success": true,
+        "extractions": [
+          {
+            "extraction_class": "payment_clause",
+            "extraction_text": "Payment shall be made within 30 days of invoice date.",
+            "alignment_status": "match_exact",
+            "extraction_index": 1,
+            "group_index": 0,
+            "char_interval": {
+              "start_pos": 204,
+              "end_pos": 257
+            },
+            "attributes": {
+              "risk_level": "Medium",
+              "confidence": "high",
+              "timeframe": "30 days"
+            }
+          },
+          {
+            "extraction_class": "termination_clause",
+            "extraction_text": "Either party may terminate this agreement with 90 days written notice.",
+            "alignment_status": "match_exact",
+            "extraction_index": 2,
+            "group_index": 0,
+            "char_interval": {
+              "start_pos": 258,
+              "end_pos": 328
+            },
+            "attributes": {
+              "risk_level": "Critical",
+              "confidence": "high",
+              "timeframe": "90 days"
+            }
+          },
+          {
+            "extraction_class": "confidentiality_clause",
+            "extraction_text": "All proprietary information must remain confidential.",
+            "alignment_status": "match_exact",
+            "extraction_index": 3,
+            "group_index": 0,
+            "char_interval": {
+              "start_pos": 329,
+              "end_pos": 382
+            },
+            "attributes": {
+              "risk_level": "Medium",
+              "confidence": "high"
+            }
+          }
+        ]
+      }
+    },
+    "clauses": [
+      {
+        "extraction_class": "payment_clause",
+        "extraction_text": "Payment shall be made within 30 days of invoice date.",
+        "alignment_status": "match_exact",
+        "extraction_index": 1,
+        "group_index": 0,
+        "char_interval": {
+          "start_pos": 204,
+          "end_pos": 257
+        },
+        "attributes": {
+          "risk_level": "Medium",
+          "confidence": "high",
+          "timeframe": "30 days"
+        }
+      },
+      {
+        "extraction_class": "termination_clause",
+        "extraction_text": "Either party may terminate this agreement with 90 days written notice.",
+        "alignment_status": "match_exact",
+        "extraction_index": 2,
+        "group_index": 0,
+        "char_interval": {
+          "start_pos": 258,
+          "end_pos": 328
+        },
+        "attributes": {
+          "risk_level": "Critical",
+          "confidence": "high",
+          "timeframe": "90 days"
+        }
+      },
+      {
+        "extraction_class": "confidentiality_clause",
+        "extraction_text": "All proprietary information must remain confidential.",
+        "alignment_status": "match_exact",
+        "extraction_index": 3,
+        "group_index": 0,
+        "char_interval": {
+          "start_pos": 329,
+          "end_pos": 382
+        },
+        "attributes": {
+          "risk_level": "Medium",
+          "confidence": "high"
+        }
+      }
+    ],
+    "text": "Financial Insight Test Document\n\nApple Inc. reported a revenue of $89.5 billion for the quarter.\nThe company's CEO, Tim Cook, announced the results on Tuesday.\nThe stock price rose to $150.25 per share.\n\nPayment shall be made within 30 days of invoice date.\nEither party may terminate this agreement with 90 days written notice.\nAll proprietary information must remain confidential.\n\nThe market sentiment is generally positive regarding the tech sector.\nHowever, inflation concerns remain a risk factor.\n",
+    "highlighted_html_url": "/outputs/clause_highlight_doc_a57defed.html",
+    "metadata": {
+      "text_length": 504,
+      "models_used": [
+        "local_rule_engine"
+      ],
+      "total_clauses": 3,
+      "engine": "local_rules"
+    }
+  },
+  "finbert": {
+    "success": true,
+    "sentence_results": [
+      {
+        "text": "Financial Insight Test Document\n\nApple Inc. reported a revenue of $89.5 billion for the quarter.",
+        "label": "neutral",
+        "score": 0.7689865827560425,
+        "sentence_index": 0
+      },
+      {
+        "text": "The company's CEO, Tim Cook, announced the results on Tuesday.",
+        "label": "neutral",
+        "score": 0.88748699426651,
+        "sentence_index": 1
+      },
+      {
+        "text": "The stock price rose to $150.25 per share.",
+        "label": "positive",
+        "score": 0.8342927694320679,
+        "sentence_index": 2
+      },
+      {
+        "text": "Payment shall be made within 30 days of invoice date.",
+        "label": "neutral",
+        "score": 0.9441835284233093,
+        "sentence_index": 3
+      },
+      {
+        "text": "Either party may terminate this agreement with 90 days written notice.",
+        "label": "neutral",
+        "score": 0.7390919327735901,
+        "sentence_index": 4
+      },
+      {
+        "text": "All proprietary information must remain confidential.",
+        "label": "neutral",
+        "score": 0.9425613880157471,
+        "sentence_index": 5
+      },
+      {
+        "text": "The market sentiment is generally positive regarding the tech sector.",
+        "label": "positive",
+        "score": 0.8398149013519287,
+        "sentence_index": 6
+      },
+      {
+        "text": "However, inflation concerns remain a risk factor.",
+        "label": "neutral",
+        "score": 0.5639467835426331,
+        "sentence_index": 7
+      }
+    ],
+    "statistics": {
+      "sentiment_distribution": {
+        "neutral": 6,
+        "positive": 2
+      },
+      "average_scores": {
+        "neutral": 0.807709534962972,
+        "positive": 0.8370538353919983
+      },
+      "overall_sentiment": "neutral",
+      "total_sentences_analyzed": 8
+    },
+    "total_sentences": 8,
+    "metadata": {
+      "model_used": "ProsusAI/finbert",
+      "text_length": 504
+    }
+  },
+  "rag_indexed": true,
+  "summary": {
+    "total_steps_completed": 4,
+    "steps_completed": [
+      "ner",
+      "langextract",
+      "finbert",
+      "rag_indexing"
+    ],
+    "text_length": 504,
+    "processing_success": true
+  }
+}

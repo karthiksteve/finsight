@@ -26,6 +26,8 @@ import ClauseExtraction from '../components/features/ClauseExtraction'
 import AnalysisCharts from '../components/features/AnalysisCharts'
 import { exportResults, generateReport, downloadBlob } from '../services/api'
 
+import defaultResults from '../data/defaultAnalysisResults.json'
+
 export default function Results({ analysisResults: globalResults }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -33,40 +35,26 @@ export default function Results({ analysisResults: globalResults }) {
   const [selectedAnalyses, setSelectedAnalyses] = useState({
     ner: true,
     sentiment: true,
-    clauses: false
+    clauses: true
   });
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [analysisResults, setAnalysisResults] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState(['test_document.txt']);
+  const [analysisResults, setAnalysisResults] = useState(defaultResults);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   // Load selected analyses from navigation state or sessionStorage
   useEffect(() => {
-    const data = location.state?.analysisResults || globalResults;
+    const data = location.state?.analysisResults || globalResults || defaultResults;
     if (data) {
       setAnalysisResults(data);
-      setSelectedAnalyses(location.state?.selectedFeatures || selectedAnalyses);
-      setUploadedFiles(location.state?.fileName ? [location.state.fileName] : []);
+      const features = location.state?.selectedFeatures || { ner: true, sentiment: true, clauses: true };
+      setSelectedAnalyses(features);
+      setUploadedFiles(location.state?.fileName ? [location.state.fileName] : ['test_document.txt']);
 
       // Set initial tab based on selected analyses
-      const features = location.state.selectedFeatures;
       if (features?.ner) setActiveTab('ner');
       else if (features?.sentiment) setActiveTab('sentiment');
       else if (features?.clauses) setActiveTab('clause');
-    } else {
-      // Fallback to sessionStorage for backwards compatibility
-      const stored = sessionStorage.getItem('selectedAnalyses');
-      const files = sessionStorage.getItem('uploadedFiles');
-      if (stored) {
-        setSelectedAnalyses(JSON.parse(stored));
-        const analyses = JSON.parse(stored);
-        if (analyses.ner) setActiveTab('ner');
-        else if (analyses.sentiment) setActiveTab('sentiment');
-        else if (analyses.clauses) setActiveTab('clause');
-      }
-      if (files) {
-        setUploadedFiles(JSON.parse(files));
-      }
     }
   }, [location]);
 

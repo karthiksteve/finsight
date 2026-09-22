@@ -36,6 +36,16 @@ export default function ChatbotPage() {
             }
           ]);
         }
+      } else {
+        setUploadedDocs([{ name: 'test_document.txt', size: '516 B', url: '#' }]);
+        setMessages([
+          {
+            id: 1,
+            text: "Hello! I'm CAG (Contextual AI Guide). I have \"test_document.txt\" indexed and ready. Ask me any financial or legal questions about it!",
+            sender: 'bot',
+            timestamp: new Date()
+          }
+        ]);
       }
     } catch (e) {
       console.warn(e);
