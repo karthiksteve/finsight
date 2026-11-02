@@ -8,12 +8,19 @@ echo         Financial Document Intelligence & Extraction Engine
 echo =====================================================================
 echo.
 
+set "PROJECT_ROOT=%~dp0"
+if exist "%PROJECT_ROOT%.venv\Scripts\python.exe" (
+    set "PYTHON_CMD=%PROJECT_ROOT%.venv\Scripts\python.exe"
+) else (
+    set "PYTHON_CMD=py -3.11"
+)
+
 echo [*] Checking AI Models and Dependencies...
-py -3.11 verify_system.py
+"%PYTHON_CMD%" verify_system.py
 echo.
 
 echo [*] Launching FastAPI Backend Server on http://localhost:8001...
-start "FinSight AI - Backend Server" cmd /k "cd backend && py -3.11 -m uvicorn app:app --host 0.0.0.0 --port 8001 --reload"
+start "FinSight AI - Backend Server" cmd /k "cd backend && \"%PYTHON_CMD%\" -m uvicorn app:app --host 0.0.0.0 --port 8001 --reload"
 
 echo [*] Launching React Vite Frontend on http://localhost:5173...
 start "FinSight AI - Frontend UI" cmd /k "cd frontend && npm run dev"

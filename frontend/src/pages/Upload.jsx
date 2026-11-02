@@ -123,36 +123,45 @@ const UploadPage = ({ setAnalysisResults }) => {
 
     setStep(3);
     setIsUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(10);
+    setErrorMessage(null);
+
+    let progressInterval = null;
 
     try {
       // Import API service dynamically
       const { processDocument } = await import('../services/api');
 
-      // Simulate progress for UX
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 5, 90));
-      }, 300);
+      // Smooth progress indicator with active pacing
+      progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev < 40) return prev + 10;
+          if (prev < 75) return prev + 5;
+          if (prev < 90) return prev + 3;
+          if (prev < 96) return prev + 1;
+          return prev;
+        });
+      }, 350);
 
-      // Process the first file (for now, handle only the first file)
+      // Process the first file
       const file = selectedFiles[0].file;
       const result = await processDocument(file, {
         ...selectedFeatures,
         clausePrompt: selectedFeatures.clauses ? clausePrompt : null
       });
 
-      if (result.success) {
+      if (progressInterval) clearInterval(progressInterval);
+
+      if (result && result.success) {
         // Update global state if available
         if (setAnalysisResults) {
           setAnalysisResults(result);
         }
 
-        clearInterval(progressInterval);
         setUploadProgress(100);
 
         setTimeout(() => {
           setIsUploading(false);
-          // toast.success('Analysis complete!');
           // Pass the actual results to the Results page
           navigate('/results', {
             state: {
@@ -161,16 +170,16 @@ const UploadPage = ({ setAnalysisResults }) => {
               fileName: file.name
             }
           });
-        }, 500);
+        }, 400);
       } else {
-        clearInterval(progressInterval);
-        throw new Error(result.error || "Analysis failed");
+        throw new Error(result?.error || "Analysis failed to complete");
       }
     } catch (error) {
       console.error('Error processing document:', error);
+      if (progressInterval) clearInterval(progressInterval);
       setIsUploading(false);
       setUploadProgress(0);
-      setErrorMessage(`Error processing document: ${error.message || "Unknown error occurred"}`);
+      setErrorMessage(`Error processing document: ${error.message || "Connection timeout or server error"}. Please check server and try again.`);
     }
   };
 
@@ -602,7 +611,12 @@ const UploadPage = ({ setAnalysisResults }) => {
                       className="mb-8"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">Processing documents...</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {uploadProgress < 30 ? "Uploading & parsing document..." :
+                           uploadProgress < 65 ? "Extracting financial entities & clauses..." :
+                           uploadProgress < 95 ? "Analyzing sentiment & indexing assistant..." :
+                           "Finalizing comprehensive results..."}
+                        </span>
                         <span className="text-sm font-bold text-horizon-primary dark:text-horizon-accent.blue">{uploadProgress}%</span>
                       </div>
                       <div className="bg-gray-200 dark:bg-horizon-tertiary rounded-full h-3 overflow-hidden">

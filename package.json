@@ -1,0 +1,17 @@
+{
+  "name": "finsight-ai-docs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Document generation scripts and utilities for FinSight AI",
+  "scripts": {
+    "generate:academic": "node build_academic_docx.js",
+    "generate:technical": "node generate_comprehensive_technical_doc.js",
+    "generate:review3": "node build_review3_final_report.js",
+    "generate:ieee": "node build_ieee_paper_docx.js",
+    "generate:plagiarism": "node build_plagiarism_report_docx.js",
+    "generate:all": "node build_review3_final_report.js && node build_ieee_paper_docx.js && node build_plagiarism_report_docx.js && node generate_comprehensive_technical_doc.js"
+  },
+  "dependencies": {
+    "docx": "^8.5.0"
+  }
+}

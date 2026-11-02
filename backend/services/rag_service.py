@@ -134,7 +134,7 @@ class RAGService:
             print(f"LM Studio generation error: {e}")
             return None
 
-    def _generate_content(self, prompt: str, top_docs: List[Dict[str, Any]]) -> str:
+    def _generate_content(self, prompt: str, top_docs: List[Dict[str, Any]], question: Optional[str] = None) -> str:
         """Generate with the configured provider; cloud fallback is never implicit."""
         # Qwen 3 8B is the default local model. Use Gemma 3 4B by changing LMSTUDIO_MODEL.
         if Config.LLM_PROVIDER == "lmstudio" and self._is_lmstudio_available():
@@ -157,33 +157,71 @@ class RAGService:
             except Exception as e:
                 print(f"Groq generation error: {e}")
 
-        # Deterministic local fallback keeps the API usable when the local server is down.
+        # Targeted local fallback: synthesizes answers directly matching user question
         print("No active LLM server found. Generating direct contextual synthesis.")
-        bullets = []
+        q_words = set(re.findall(r'\w+', (question or "").lower())) - {
+            "what", "is", "the", "are", "how", "much", "many", "when", "who", "which", "where", "why", "in", "of", "to", "a", "an"
+        }
+        
+        # Find best matching sentences across top documents
+        direct_findings = []
+        for doc in top_docs:
+            sentences = re.split(r'(?<=[.?!])\s+', doc['content'])
+            for s in sentences:
+                s_clean = s.strip()
+                if len(s_clean) < 15:
+                    continue
+                s_words = set(re.findall(r'\w+', s_clean.lower()))
+                overlap = len(q_words.intersection(s_words))
+                if overlap > 0:
+                    direct_findings.append((overlap, s_clean))
+
+        direct_findings.sort(key=lambda x: x[0], reverse=True)
+        
+        insights = ["### Document Insights (Offline Mode)\n"]
+        if direct_findings:
+            insights.append("**Relevant Findings:**")
+            seen_findings = set()
+            for _, sentence in direct_findings[:3]:
+                if sentence not in seen_findings:
+                    seen_findings.add(sentence)
+                    insights.append(f"- {sentence}")
+            insights.append("")
+
+        insights.append("**Context Passages:**")
         for i, doc in enumerate(top_docs[:3]):
             excerpt = doc['content'].strip().replace("\n", " ")
-            if len(excerpt) > 300:
-                excerpt = excerpt[:297] + "..."
-            bullets.append(f"- **Key Passage {i+1}**: {excerpt}")
-            
-        synthesis = (
-            "### Document Insights (Offline Mode)\n\n"
-            + "\n".join(bullets)
-            + "\n\n> *Tip: Start LM Studio with Qwen 3 8B or Gemma 3 4B on port 1234 to enable conversational natural language answers.*"
-        )
-        return synthesis
+            if len(excerpt) > 240:
+                excerpt = excerpt[:237] + "..."
+            insights.append(f"- **Passage {i+1}** ({doc['source']}): {excerpt}")
 
-    def _get_local_embedding(self, text: str, dim: int = 256) -> List[float]:
-        """Compute fast, deterministic normalized n-gram hash vector (pure NumPy, zero network)."""
+        insights.append("\n> *Tip: Connect LM Studio with Qwen 3 8B or Gemma 3 4B on port 1234 for natural conversational dialogue.*")
+        return "\n".join(insights)
+
+    def _get_local_embedding(self, text: str, dim: int = 512) -> List[float]:
+        """Compute fast, deterministic normalized n-gram + subword hash vector (pure NumPy, zero network)."""
         words = re.findall(r'\w+', text.lower())
         vec = np.zeros(dim, dtype=np.float32)
         if not words:
             return vec.tolist()
-            
-        for w in words:
+
+        # Word unigrams & bigrams
+        for i, w in enumerate(words):
             h = int(hashlib.md5(w.encode('utf-8')).hexdigest(), 16) % dim
-            vec[h] += 1.0
-            
+            vec[h] += 1.5
+            if i < len(words) - 1:
+                bigram = f"{w}_{words[i+1]}"
+                h_bi = int(hashlib.md5(bigram.encode('utf-8')).hexdigest(), 16) % dim
+                vec[h_bi] += 1.0
+
+        # Subwords (3-4 char grams)
+        text_clean = text.lower()[:1000]
+        for n in (3, 4):
+            for i in range(len(text_clean) - n + 1):
+                gram = text_clean[i:i+n]
+                h_gram = int(hashlib.md5(gram.encode('utf-8')).hexdigest(), 16) % dim
+                vec[h_gram] += 0.3
+
         norm = np.linalg.norm(vec)
         if norm > 0:
             vec /= norm
@@ -277,6 +315,10 @@ class RAGService:
             if q_norm == 0:
                 q_norm = 1.0
 
+            q_keywords = set(re.findall(r'\w+', question.lower())) - {
+                "what", "is", "the", "are", "in", "of", "to", "a", "an", "for", "with"
+            }
+
             similarities = []
             for doc in self.documents:
                 d_emb = doc["embedding"]
@@ -284,6 +326,14 @@ class RAGService:
                 if d_norm == 0:
                     d_norm = 1.0
                 sim = float(np.dot(d_emb, q_emb) / (d_norm * q_norm))
+                
+                # Boost score if chunk contains exact keywords from question
+                if q_keywords:
+                    d_words = set(re.findall(r'\w+', doc["content"].lower()))
+                    overlap = len(q_keywords.intersection(d_words))
+                    keyword_boost = min(0.35, overlap * 0.06)
+                    sim += keyword_boost
+
                 similarities.append((sim, doc))
 
             similarities.sort(key=lambda x: x[0], reverse=True)
@@ -311,7 +361,7 @@ class RAGService:
                 "Answer:"
             )
 
-            answer = self._generate_content(prompt, top_docs)
+            answer = self._generate_content(prompt, top_docs, question=question)
 
             return RAGResponse(
                 success=True,

@@ -77,6 +77,16 @@ class LangExtractService:
                 "keywords": ["renewal", "renew", "extend", "extension", "automatic renewal"],
                 "description": "Clauses related to contract renewal and extension",
                 "risk": "Medium"
+            },
+            "indemnification_clause": {
+                "keywords": ["indemnify", "indemnification", "hold harmless", "defend and hold"],
+                "description": "Clauses specifying indemnity and legal defense obligations",
+                "risk": "Critical"
+            },
+            "intellectual_property_clause": {
+                "keywords": ["intellectual property", "trademark", "patent", "copyright", "work for hire", "proprietary rights", "ip rights"],
+                "description": "Clauses defining ownership and licensing of intellectual property",
+                "risk": "High"
             }
         }
 
@@ -138,19 +148,26 @@ class LangExtractService:
             return None
 
     def _calculate_char_intervals(self, full_text: str, extraction_text: str) -> Dict[str, int]:
-        """Find start and end positions of extracted text in full text."""
+        """Find start and end positions of extracted text in full text with regex tolerance."""
         try:
             start = full_text.find(extraction_text)
             if start != -1:
                 return {"start_pos": start, "end_pos": start + len(extraction_text)}
             
+            # Regex search with whitespace flexibility
+            escaped = re.escape(extraction_text.strip())
+            escaped = re.sub(r'\\\s+', r'\\s+', escaped)
+            match = re.search(escaped, full_text, re.IGNORECASE)
+            if match:
+                return {"start_pos": match.start(), "end_pos": match.end()}
+
             # Fuzzy match by leading words
             words = extraction_text.split()
             if len(words) >= 3:
                 snippet = " ".join(words[:3])
                 start = full_text.find(snippet)
                 if start != -1:
-                    return {"start_pos": start, "end_pos": start + len(extraction_text)}
+                    return {"start_pos": start, "end_pos": min(len(full_text), start + len(extraction_text))}
             
             return {"start_pos": -1, "end_pos": -1}
         except Exception:

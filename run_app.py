@@ -18,14 +18,17 @@ def main():
     print("                 FinSight AI Platform Launcher")
     print("=" * 65)
 
+    venv_py = root_dir / ".venv" / "Scripts" / "python.exe"
+    py_cmd = str(venv_py) if venv_py.exists() else sys.executable
+
     # 1. Run quick verification
     print("\n[*] Verifying local models and dependencies...")
-    subprocess.run([sys.executable, "verify_system.py"], cwd=root_dir)
+    subprocess.run([py_cmd, "verify_system.py"], cwd=root_dir)
 
     # 2. Start Backend
     print("\n[*] Starting FastAPI backend on http://localhost:8001...")
     backend_proc = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001", "--reload"],
+        [py_cmd, "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001", "--reload"],
         cwd=backend_dir
     )
 

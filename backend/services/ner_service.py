@@ -84,16 +84,39 @@ class NERService:
             # Process text
             doc = self.nlp_model(text)
             
-            # Extract entities
-            entities = []
+            # Extract and sanitize entities
+            stop_words = {
+                "a", "an", "the", "of", "in", "on", "at", "to", "for", "with", "by", "from",
+                "and", "or", "is", "be", "as", "it", "this", "that", "all", "al", "any", "not"
+            }
+            raw_entities = []
             for ent in doc.ents:
-                entities.append({
-                    "text": ent.text,
+                clean_text = ent.text.strip(" \t\r\n.,;:()[]{}'\"")
+                if len(clean_text) < 2:
+                    continue
+                if clean_text.lower() in stop_words:
+                    continue
+                offset_start = ent.text.find(clean_text)
+                actual_start = ent.start_char + offset_start if offset_start != -1 else ent.start_char
+                actual_end = actual_start + len(clean_text)
+                raw_entities.append({
+                    "text": clean_text,
                     "label": ent.label_,
-                    "start": ent.start_char,
-                    "end": ent.end_char,
-                    "confidence": getattr(ent, 'confidence', None)
+                    "start": actual_start,
+                    "end": actual_end,
+                    "confidence": getattr(ent, 'confidence', 0.95)
                 })
+
+            # Sort by start offset and prioritize longer matches
+            raw_entities.sort(key=lambda x: (x["start"], -(x["end"] - x["start"])))
+
+            # Deduplicate overlaps
+            entities = []
+            last_end = -1
+            for e in raw_entities:
+                if e["start"] >= last_end:
+                    entities.append(e)
+                    last_end = e["end"]
             
             # Generate visualization HTML
             html_content = displacy.render(doc, style="ent", page=True, jupyter=False)
@@ -114,7 +137,7 @@ class NERService:
                 "metadata": {
                     "text_length": len(text),
                     "model_path": str(Config.NER_MODEL_PATH),
-                    "entity_types": list(set(ent.label_ for ent in doc.ents))
+                    "entity_types": sorted(list(set(e["label"] for e in entities)))
                 }
             }
             
@@ -125,6 +148,13 @@ class NERService:
                 "entities": [],
                 "entity_count": 0
             }
+
+    def unload_model(self):
+        """Free memory by releasing the spaCy model when idle."""
+        self.nlp_model = None
+        self.model_loaded = False
+        import gc
+        gc.collect()
     
     def get_entity_statistics(self, entities: List[Dict[str, Any]]) -> Dict[str, Any]:
         """

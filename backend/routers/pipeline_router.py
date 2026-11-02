@@ -16,6 +16,9 @@ from config import Config
 
 router = APIRouter()
 
+MAX_ANALYSIS_CHARS = 100_000
+MAX_RAG_CHARS = 400_000
+
 # Initialize services
 docling_service = DoclingService()
 ner_service = NERService()
@@ -38,16 +41,6 @@ class TextPipelineRequest(BaseModel):
     text: str
     options: PipelineOptions = PipelineOptions()
 
-
-@router.get("/pipeline-status")
-async def get_pipeline_status():
-    return {
-        "ner": {
-            "available": ner_service.is_model_available(),
-            "model_path": str(Config.NER_MODEL_PATH),
-            "model_exists": Config.NER_MODEL_PATH.exists()
-        }
-    }
 
 @router.post("/test-upload")
 async def test_upload(file: UploadFile = File(...)):
@@ -126,6 +119,7 @@ async def process_document_pipeline(
 
         extracted_text: str = docling_result.get("text", "") or ""
         extracted_html: str = docling_result.get("html", "") or ""
+        analysis_text = extracted_text[:MAX_ANALYSIS_CHARS]
 
         if not extracted_text:
             raise HTTPException(
@@ -172,7 +166,7 @@ async def process_document_pipeline(
                 if ner_model_path:
                     ner_service.load_model(ner_model_path)
 
-                ner_result = ner_service.extract_entities(extracted_text)
+                ner_result = ner_service.extract_entities(analysis_text)
                 pipeline_result["ner"] = ner_result
                 pipeline_result["pipeline_steps"].append("ner")
             except Exception as e:
@@ -187,7 +181,7 @@ async def process_document_pipeline(
                 document_id = f"doc_{doc_id_hash}"
 
                 langextract_result = langextract_service.extract_clauses(
-                    text=extracted_text,
+                    text=analysis_text,
                     models=parsed_langextract_models,
                     api_key=langextract_api_key,
                     document_id=document_id,
@@ -207,7 +201,7 @@ async def process_document_pipeline(
                 if extracted_html:
                     finbert_result = finbert_service.analyze_document_sentiment(extracted_html)
                 else:
-                    finbert_result = finbert_service.analyze_text_sentiment(extracted_text)
+                    finbert_result = finbert_service.analyze_text_sentiment(analysis_text)
 
                 pipeline_result["finbert"] = finbert_result
                 pipeline_result["pipeline_steps"].append("finbert")
@@ -216,7 +210,7 @@ async def process_document_pipeline(
 
         # Step 4: Index into RAG knowledge base for CAG Chatbot
         try:
-            rag_service.add_text(extracted_text, source=file.filename)
+            rag_service.add_text(extracted_text[:MAX_RAG_CHARS], source=file.filename)
             pipeline_result["rag_indexed"] = True
             pipeline_result["pipeline_steps"].append("rag_indexing")
         except Exception as e:

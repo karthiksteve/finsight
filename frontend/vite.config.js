@@ -15,5 +15,18 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-clerk': ['@clerk/clerk-react'],
+          'vendor-charts': ['chart.js', 'react-chartjs-2', 'recharts'],
+          'vendor-motion': ['framer-motion', 'lucide-react']
+        }
+      }
+    }
   }
 })
